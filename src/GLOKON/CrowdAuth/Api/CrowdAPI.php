@@ -10,6 +10,7 @@
  */
 
 namespace GLOKON\CrowdAuth\Api;
+use Log;
 
 class CrowdAPI {
 
@@ -23,20 +24,30 @@ class CrowdAPI {
      */
     private function runCrowdAPI($requestEndpoint, $requestType, $requestData)
     {
-        $crowdURL = \Config::get('crowd-auth::url');
-        $crowdAppName = \Config::get('crowd-auth::app_name');
-        $crowdAppPassword = \Config::get('crowd-auth::app_password');
+        $crowdURL = \Config::get('crowd-auth.url');
+        $crowdAppName = \Config::get('crowd-auth.app_name');
+        $crowdAppPassword = \Config::get('crowd-auth.app_password');
         $crowdHTTPHeaders = array(
                                 'Accept: application/json',
                                 'Content-Type: application/json',
                             );
+							
+							$endpointUrl = $crowdURL.'/rest/usermanagement'.$requestEndpoint;
+							
+							Log::debug("Access endpoint " . $endpointUrl . " with method " . $requestType);
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $crowdURL.'/rest/usermanagement'.$requestEndpoint);
+        curl_setopt($ch, CURLOPT_URL, $endpointUrl);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $crowdHTTPHeaders);
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_USERPWD, $crowdAppName.":".$crowdAppPassword);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		
+		$sslVerify = \Config::get('crowd-auth.verify_certificate') ? 1 : 0;
+		
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $sslVerify);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $sslVerify);
+		
         switch ($requestType) {
             case "POST":
                 curl_setopt($ch, CURLOPT_POST, 1);
@@ -51,9 +62,28 @@ class CrowdAPI {
                 break;
         }
         $crowdOutput = curl_exec($ch);
+		
+		if ($crowdOutput === FALSE) {
+			Log::error("CURL error during Crowd authentication", ['curl_message' => curl_error($ch)]);
+		}
+		
         $crowdHTTPStatus = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         $crowdOutputDecoded = json_decode($crowdOutput, true);
+		
+		if($crowdHTTPStatus >= 400) {
+			Log::error("Invalid response from Crowd", ['http_status' => $crowdHTTPStatus, 'decoded_response' => $crowdOutputDecoded]);
+
+			if ($crowdHTTPStatus == 401) {
+				Log::error("Please check Crowd application name and token.");
+			}
+			else if ($crowdHTTPStatus == 403) {
+				Log:error("Please check for whitelisted IPv4 and/or IPv6 address in Crowd for *this* server");
+			}
+		}
+
+		Log::debug("JSON response received", ['data' => $crowdOutputDecoded]);
+		
         return array('status' => $crowdHTTPStatus, 'data' => $crowdOutputDecoded);
     }
 
@@ -78,7 +108,9 @@ class CrowdAPI {
                                 )
                             )
                         ));
+
             $apiReturn = $this->runCrowdAPI($apiEndpoint, "POST", $apiData);
+
             if ($apiReturn['status'] == '201') {
                 if ($credentials['username'] == $apiReturn['data']['user']['name']) {
                     return $apiReturn['data']['token'];
@@ -107,7 +139,7 @@ class CrowdAPI {
         return null;
     }
 
-    /**
+    /**	
      * Retrieves the token if matched with sent token
      *
      * @param  string  $token
@@ -170,6 +202,7 @@ class CrowdAPI {
     {
         $apiEndpoint = '/1/user?username='.$username.'&expand=attributes';
         $apiReturn = $this->runCrowdAPI($apiEndpoint, "GET", array());
+		
         if ($apiReturn['status'] == '200') {
             $userAttributes = array();
             for ($i = 0; $i < count($apiReturn['data']['attributes']['attributes']); $i++) {
@@ -236,11 +269,19 @@ class CrowdAPI {
     public function canUserLogin($username)
     {
         $userGroups = $this->getUserGroups($username);
+		$allowedGroups = \Config::get('crowd-auth.app_groups');
+		
+		// do not apply group check if no group is defined
+		if (count($allowedGroups) == 0) {
+			return true;
+		}
+		
         if (count($userGroups) > 0) {
-            if (count(array_intersect($userGroups, \Config::get('crowd-auth::app_groups'))) > 0) {
+            if (count(array_intersect($userGroups, $allowedGroups)) > 0) {
                 return true;
             }
         }
+		
         return false;
     }
 }

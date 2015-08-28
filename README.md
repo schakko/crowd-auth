@@ -15,7 +15,15 @@ A simple way to implement Atlassian Crowd Authentication into your application.
 
 ## Quick start
 
-### Laravel 4.2.x
+### Requirements
+
+You have to enable the php_curl extensions in your php.ini:
+
+	; extensions...
+	extension=php_curl.dll
+
+
+### Laravel 5.1.x
 
 In the `require` key of `composer.json` file add the following
 
@@ -25,29 +33,29 @@ Run the Composer update comand
 
     $ composer update
 
-In your `config/app.php` add `'GLOKON\CrowdAuth\CrowdAuthServiceProvider'` to the end of the `providers` array
+In your `config/app.php` add `GLOKON\CrowdAuth\CrowdAuthServiceProvider::class` to the end of the `providers` array
 
 ```php
 'providers' => array(
 
-    'Illuminate\Foundation\Providers\ArtisanServiceProvider',
-    'Illuminate\Auth\AuthServiceProvider',
+    Illuminate\Foundation\Providers\ArtisanServiceProvider,
+    Illuminate\Auth\AuthServiceProvider,
     ...
-    'GLOKON\CrowdAuth\CrowdAuthServiceProvider',
+    GLOKON\CrowdAuth\CrowdAuthServiceProvider::class,
 ),
 ```
 
 Now generate the Crowd Auth migrations (make sure you have your database configuration set up):
 
-    $ php artisan migrate --package="glokon/crowd-auth"
+    $ php artisan migrate --path="vendor/glokon/crowd-auth/src/migrations"
 
 This will setup three tables - `crowd_users`, `crowd_groups` and `crowdgroup_crowduser`.
 
 Now publish the config files for this package:
 
-    $ php artisan config:publish "glokon/crowd-auth"
+    $ php artisan vendor:publish --provider=GLOKON\CrowdAuth\CrowdAuthServiceProvider --tag=config
 
-Once the configuration is published go to your `config/packages/glokon/crowd-auth/crowdauth.php` and configure your Atlassian Crowd settings.
+Once the configuration is published go to your `config/crowd-auth.php` and configure your Atlassian Crowd settings.
 
 After you have configured your Atlassian Crowd settings you need to change the `driver` setting in `config/auth.php` to:
 
@@ -55,4 +63,4 @@ After you have configured your Atlassian Crowd settings you need to change the `
 'driver' => 'crowd-auth',
 ```
 
-Once all this is completed you can simply use `Auth::Attempt()` and it will attempt to login using your Atlassian Crowd server.
+Once all this is completed you can simply use `Auth::Attempt(['username' => 'my_username', 'password' => 'my_password')` and it will attempt to login using your Atlassian Crowd server.
