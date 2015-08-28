@@ -61,18 +61,18 @@ class CrowdAuthUserProvider implements UserProvider {
         return null;
     }
 
-	/**
-	 * Retrieve IP address of client
-	 * @return string a forced IP addresss or the REMOTE_ADDR
-	 */
-	public function getClientIp() {
-		$forcedClientIp = \Config::get('crowd-auth.force_client_ip');
-		$useClientIp = $forcedClientIp ? $forcedClientIp : $_SERVER['REMOTE_ADDR'];
-		
-		return filter_var($useClientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
-	}
-	
-	/**
+    /**
+     * Retrieve IP address of client
+     * @return string a forced IP addresss or the REMOTE_ADDR
+     */
+    public function getClientIp() {
+        $forcedClientIp = \Config::get('crowd-auth.force_client_ip');
+        $useClientIp = $forcedClientIp ? $forcedClientIp : $_SERVER['REMOTE_ADDR'];
+        
+        return filter_var($useClientIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+    }
+    
+    /**
      * Validate a user against the given credentials.
      *
      * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
@@ -80,14 +80,16 @@ class CrowdAuthUserProvider implements UserProvider {
      * @return bool
      */
     public function validateCredentials(UserContract $user, array $credentials) {
-		if (\App::make('crowd-auth')->canUserLogin($credentials['username'])) {
-			$token = \App::make('crowd-auth')->ssoAuthUser($credentials, $this->getClientIp());
-			
+        if (\App::make('crowd-auth')->canUserLogin($credentials['username'])) {
+            $token = \App::make('crowd-auth')->ssoAuthUser($credentials, $this->getClientIp());
+            
             if ($token != null && \App::make('crowd-auth')->ssoGetUser($credentials['username'], $token) != null) {
+                $crowdUserModel = $this->createClassReferenceByOption('crowd_user_model');
+                $crowdGroupModel = $this->createClassReferenceByOption('crowd_group_model');
+
                 // Check if user exists in DB, if not add it.
-				$crowdUserModel = $this->createClassReferenceByOption('crowd_user_model');
-				
                 $stored_crowd_user = $crowdUserModel::where('crowd_key', '=', $user->key)->first();
+
                 if ($stored_crowd_user == null) {
                     $stored_crowd_user = $crowdUserModel::create(array(
                         'crowd_key' => $user->key,
@@ -98,13 +100,11 @@ class CrowdAuthUserProvider implements UserProvider {
                         'last_name' => $user->lastName,
                     ));
                 }
+				
                 $stored_crowd_user->save();
-				
-				$crowdGroupModel = $this->createClassReferenceByOption('crowd_group_model');
-				
                 $attached_groups = [];
-				
-				foreach ($user->usergroups as $usergroup) {
+                
+                foreach ($user->usergroups as $usergroup) {
                     // Check if usergroup already exists in the DB, if not add it.
                     $crowdUserGroup = $crowdGroupModel::where('group_name', '=', $usergroup)->first();
 
@@ -113,27 +113,27 @@ class CrowdAuthUserProvider implements UserProvider {
                             'group_name' => $usergroup,
                         ));
                     }
-					
-					$attached_groups[] = $crowdUserGroup->id;
+                    
+                    $attached_groups[] = $crowdUserGroup->id;
                 }
-				
-				// assign all groups to the user
-				$stored_crowd_user->groups()->sync($attached_groups);
+                
+                // assign all groups to the user
+                $stored_crowd_user->groups()->sync($attached_groups);
                 $stored_crowd_user->save();
-				
+                
                 $user->setRememberToken($token);
-				
+                
                 return true;
             }
         }
         return false;
     }
-	
-	private function createClassReferenceByOption($keyName) {
-		$clazz = \Config::get('crowd-auth.' . $keyName);
-		
-		return $clazz;
-	}
+    
+    private function createClassReferenceByOption($keyName) {
+        $clazz = \Config::get('crowd-auth.' . $keyName);
+        
+        return $clazz;
+    }
 
     /**
      * Retrieve a user by by their unique identifier and "remember me" token.
@@ -150,7 +150,7 @@ class CrowdAuthUserProvider implements UserProvider {
         return null;
     }
 
-	/**
+    /**
      * Update the "remember me" token for the given user in storage.
      *
      * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
@@ -159,10 +159,10 @@ class CrowdAuthUserProvider implements UserProvider {
      */
     public function updateRememberToken(UserContract $user, $token)
     {
-	    if ($user != null) {
+        if ($user != null) {
             $user->setRememberToken(\App::make('crowd-auth')->ssoUpdateToken($token, $this->getClientIp()));
-			
-			$user->save();
+            
+            $user->save();
         }
         return null;
     }

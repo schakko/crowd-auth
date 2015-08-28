@@ -34,9 +34,9 @@ class CrowdAuthServiceProvider extends ServiceProvider {
             return new \Illuminate\Auth\Guard(new \GLOKON\CrowdAuth\CrowdAuthUserProvider, \App::make('session.store'));
         });
 
-		$this->publishes([
-			__DIR__.'/../../../src/config/config.php' => config_path('crowd-auth.php'),
-		], 'config');
+        $this->publishes([
+            __DIR__.'/../../../src/config/config.php' => config_path('crowd-auth.php'),
+        ], 'config');
 
     }
 

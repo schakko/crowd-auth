@@ -11,11 +11,11 @@ use Illuminate\Auth\Passwords\CanResetPassword;
  */
 class CrowdGroup extends Model
 {
-	protected $fillable = ['group_name'];
-	
-	protected $table = 'crowd_groups';
-	
-	public function groups() {
-		return $this->belongsToMany('GLOKON\CrowdAuth\Model\CrowdUser', 'crowdgroup_crowduser');
-	}
+    protected $fillable = ['group_name'];
+    
+    protected $table = 'crowd_groups';
+    
+    public function groups() {
+        return $this->belongsToMany('GLOKON\CrowdAuth\Model\CrowdUser', 'crowdgroup_crowduser');
+    }
 }

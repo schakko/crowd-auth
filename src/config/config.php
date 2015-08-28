@@ -20,16 +20,16 @@ return array(
     */
 
     'url' => 'https://crowd.example.com:8080/crowd',
-	
+    
     /*
     |--------------------------------------------------------------------------
     | Crowd Auth: Check TLS certificate
     |--------------------------------------------------------------------------
-	| Check SSL/TLS certificate of endpoint
+    | Check SSL/TLS certificate of endpoint
     */
-	
-	'verify_certificate' => true,
-	
+    
+    'verify_certificate' => true,
+    
     /*
     |--------------------------------------------------------------------------
     | Crowd Auth: Application Name
@@ -37,7 +37,7 @@ return array(
     | Here is where you specify your application name that you use for your
     | crowd application.
     */
-	
+    
     'app_name' => 'my_appname',
 
     /*
@@ -60,37 +60,38 @@ return array(
     */
 
     'app_groups' => array(
-		'app-administrators',
-		'app-users',
-	),
-	
+        'app-administrators',
+        'app-users',
+    ),
+    
     /*
     |--------------------------------------------------------------------------
     | Crowd Auth: Model for Crowd users
     |--------------------------------------------------------------------------
     |
-	| Map Crowd users to this class. You can inherit from the default class
+    | Map Crowd users to this class. You can inherit from the default class
     */
-	
-	'crowd_user_model' => 'GLOKON\CrowdAuth\Model\CrowdUser',
+    
+    'crowd_user_model' => 'GLOKON\CrowdAuth\Model\CrowdUser',
 
     /*
     |--------------------------------------------------------------------------
     | Crowd Auth: Model for Crowd groups
     |--------------------------------------------------------------------------
     |
-	| Map Crowd groups to this class. You can inherit from the default class
+    | Map Crowd groups to this class. You can inherit from the default class
     */
-	
-	'crowd_group_model' => 'GLOKON\CrowdAuth\Model\CrowdGroup',
+    
+    'crowd_group_model' => 'GLOKON\CrowdAuth\Model\CrowdGroup',
 
     /*
     |--------------------------------------------------------------------------
     | Crowd Auth: Force IP address of client
     |--------------------------------------------------------------------------
     |
-	| Useful for debugging if you access the REST API through localhost/127.0.0.1 or ::1.
-	| In most cases this should be null and the detected REMOTE_ADDR is used.
+    | Useful for debugging if you access the REST API through localhost/127.0.0.1 or ::1.
+    | In most cases this should be null and the detected REMOTE_ADDR is used.
     */
-	'force_client_ip' => null,
+    
+    'force_client_ip' => null,
 );
